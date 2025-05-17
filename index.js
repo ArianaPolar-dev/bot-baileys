@@ -1,4 +1,4 @@
-const qrcode = require('qrcode-terminal');
+const QRCode = require('qrcode');
 const {
   default: makeWASocket,
   useMultiFileAuthState,
@@ -18,12 +18,14 @@ async function startSock() {
 
   sock.ev.on('creds.update', saveCreds);
 
-  sock.ev.on('connection.update', (update) => {
+  sock.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect, qr } = update;
 
     if (qr) {
-      console.log('📱 Escanea este código QR en WhatsApp Web para conectar:');
-      qrcode.generate(qr, { small: true });
+      // Generar URL del QR y mostrarla en consola
+      const qrUrl = await QRCode.toDataURL(qr);
+      console.log('📱 Escanea este QR abriéndolo en el navegador:');
+      console.log(qrUrl);
     }
 
     if (connection === 'close') {
@@ -52,24 +54,21 @@ async function startSock() {
 
     if (!isGroup || !body) return;
 
-    // Comando .all
     if (body === '.all') {
       const metadata = await sock.groupMetadata(sender);
       const mentions = metadata.participants.map(p => p.id);
       const text = metadata.participants.map(p => `@${p.id.split('@')[0]}`).join(' ');
       await sock.sendMessage(sender, {
-        text: text,
-        mentions: mentions
+        text,
+        mentions
       });
     }
 
-    // Comando .open
     if (body === '.open') {
       await sock.groupSettingUpdate(sender, 'not_announcement');
       await sock.sendMessage(sender, { text: '🔓 Grupo abierto. Todos pueden escribir.' });
     }
 
-    // Comando .close
     if (body === '.close') {
       await sock.groupSettingUpdate(sender, 'announcement');
       await sock.sendMessage(sender, { text: '🔒 Grupo cerrado. Solo administradores pueden escribir.' });
