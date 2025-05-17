@@ -27,10 +27,16 @@ async function startSock() {
     }
 
     if (connection === 'close') {
-      const shouldReconnect =
-        lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
-      console.log('🔌 Conexión cerrada. ¿Reconectar?', shouldReconnect);
-      if (shouldReconnect) startSock();
+      const statusCode = lastDisconnect?.error?.output?.statusCode;
+      const reason = DisconnectReason[statusCode] || 'unknown';
+      console.log(`🔌 Conexión cerrada por motivo: ${reason}`);
+
+      if (statusCode === DisconnectReason.loggedOut) {
+        console.log('❌ Se desconectó porque se cerró sesión. Debes volver a escanear el QR.');
+      } else {
+        console.log('🔄 Intentando reconectar...');
+        startSock();
+      }
     } else if (connection === 'open') {
       console.log('✅ Bot conectado con éxito usando Baileys');
     }
