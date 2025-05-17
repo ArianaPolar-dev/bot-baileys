@@ -1,0 +1,12 @@
+# Node.js
+node_modules/
+npm-debug.log
+.env
+
+# Carpetas temporales
+tmp/
+temp/
+.DS_Store
+
+# Baileys auth (¡NO ignorar!)
+#baileys_auth/   ← deja esta línea comentada para que sí se suba
