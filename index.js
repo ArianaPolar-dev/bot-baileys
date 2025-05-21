@@ -1,27 +1,24 @@
 const express = require('express');
 const app = express();
+const qrcode = require('qrcode-terminal');
+const {
+  default: makeWASocket,
+  useSingleFileAuthState,
+  DisconnectReason
+} = require('@whiskeysockets/baileys');
+const pino = require('pino');
 
+// Servidor web para mantener vivo en Railway o Replit
+const PORT = process.env.PORT || 3000;
 app.get('/', (req, res) => {
   res.send('🟢 Bot activo');
 });
-
-const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🌐 Servidor web escuchando en el puerto ${PORT}`);
 });
 
-
-const qrcode = require('qrcode-terminal');
-const {
-  default: makeWASocket,
-  useMultiFileAuthState,
-  DisconnectReason
-} = require('@whiskeysockets/baileys');
-
-const pino = require('pino');
-
 async function startSock() {
-  const { state, saveCreds } = await useMultiFileAuthState('baileys_auth');
+  const { state, saveState } = useSingleFileAuthState('./auth_info.json');
 
   const sock = makeWASocket({
     auth: state,
@@ -29,7 +26,7 @@ async function startSock() {
     browser: ['Baileys Bot', 'Chrome', '1.0.0']
   });
 
-  sock.ev.on('creds.update', saveCreds);
+  sock.ev.on('creds.update', saveState);
 
   sock.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect, qr } = update;
@@ -45,10 +42,10 @@ async function startSock() {
       console.log(`🔌 Conexión cerrada por motivo: ${reason}`);
 
       if (statusCode === DisconnectReason.loggedOut) {
-        console.log('❌ Se desconectó porque se cerró sesión. Debes volver a escanear el QR.');
+        console.log('❌ Se cerró la sesión. Debes escanear nuevamente.');
       } else {
         console.log('🔄 Intentando reconectar...');
-        startSock();
+        startSock(); // Reintento
       }
     } else if (connection === 'open') {
       console.log('✅ Bot conectado con éxito usando Baileys');
