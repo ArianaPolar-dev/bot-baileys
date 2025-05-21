@@ -5,8 +5,9 @@ app.get('/', (req, res) => {
   res.send('🟢 Bot activo');
 });
 
-app.listen(3000, () => {
-  console.log('🌐 Servidor web escuchando en el puerto 3000');
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🌐 Servidor web escuchando en el puerto ${PORT}`);
 });
 
 
