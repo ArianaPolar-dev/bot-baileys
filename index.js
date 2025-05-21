@@ -5,7 +5,10 @@ const {
   DisconnectReason
 } = require('@whiskeysockets/baileys');
 
+const fs = require('fs');
 const pino = require('pino');
+
+let qrCooldown = false; // bandera para evitar múltiples QR por minuto
 
 async function startSock() {
   const { state, saveCreds } = await useMultiFileAuthState('baileys_auth');
@@ -21,11 +24,18 @@ async function startSock() {
   sock.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect, qr } = update;
 
-    if (qr) {
-      // Generar URL del QR y mostrarla en consola
-      const qrUrl = await QRCode.toDataURL(qr);
-      console.log('📱 Escanea este QR abriéndolo en el navegador:');
-      console.log(qrUrl);
+    if (qr && !qrCooldown) {
+      qrCooldown = true;
+
+      // Guarda el QR como imagen
+      await QRCode.toFile('qr.png', qr);
+      console.log('📷 Código QR guardado como qr.png. Ábrelo para escanearlo desde WhatsApp.');
+
+      // Espera 2 minutos antes de permitir otro QR
+      setTimeout(() => {
+        qrCooldown = false;
+        console.log('⏳ Puedes escanear un nuevo QR si lo necesitas.');
+      }, 2 * 60 * 1000);
     }
 
     if (connection === 'close') {
@@ -34,7 +44,7 @@ async function startSock() {
       console.log(`🔌 Conexión cerrada por motivo: ${reason}`);
 
       if (statusCode === DisconnectReason.loggedOut) {
-        console.log('❌ Se desconectó porque se cerró sesión. Debes volver a escanear el QR.');
+        console.log('❌ Se cerró la sesión. Deberás escanear el QR nuevamente.');
       } else {
         console.log('🔄 Intentando reconectar...');
         startSock();
@@ -77,5 +87,3 @@ async function startSock() {
 }
 
 startSock();
-
-
